@@ -52,6 +52,7 @@ Module Commands:
   hgclone <src>      checkout a new modman-compatible module using hg clone
   link <path>        link to a module that already exists on the local filesystem
   update             update module using the appropriate VCS
+  update-remote      update module on remote server using .remote config file
   deploy             deploy an existing module (VCS not required or used)
   remove             remove a module (DELETES MODULE FILES)
   [--force]          overwrite existing files, ignore untrusted cert warnings
@@ -755,7 +756,7 @@ fi
 # Handle all other module-specific commands
 #############################################
 
-REGEX_ACTION='^(update|deploy|checkout|clone|hgclone|link|remove)$'
+REGEX_ACTION='^(update|deploy|checkout|clone|hgclone|link|remove|update-remote)$'
 REGEX_NEW_MODULE='^(checkout|clone|hgclone|link)$'
 REGEX_BAD_MODULE="($REGEX_ACTION| )"
 REGEX_MODULE='^[a-zA-Z0-9_-]+$'
@@ -928,6 +929,32 @@ case "$action" in
       apply_modman_file "$wc_desc.local" && echo "Applied local modman file for $module"
     fi
     ;;
+
+  update-remote)
+    require_wc "$module" || exit 1
+    if [ -r "$mm/.remote" ]; then
+      # Source .remote file to get config values
+      . "$mm/.remote"
+      if [ $remote_run_as ]; then 
+          ssh $remote_user@$remote_host "sudo su - $remote_run_as -c "\"" cd $remote_modman_path$module && modman update $remote_command_after "\"" "
+      else
+          ssh $remote_user@$remote_host "cd $remote_modman_path$module && modman update $remote_command_after "
+      fi
+    else
+        echo "You must have a .remote file to deploy to remote.  Creating .remote file now:"
+        echo -n "Enter your remote username and press [ENTER]: "
+        read remote_user
+        echo -n "Enter your remote hostname (yourdomain.com) and press [ENTER]: "
+        read remote_host
+        echo -n "Enter remote user to run as (leave blank to use remote username) and press [ENTER]: "
+        read remote_run_as
+        echo -n "Enter remote modman path (/home/webadmin/public_html/.modman/) and press [ENTER]: "
+        read remote_modman_path
+        echo -e "remote_user=$remote_user\nremote_host=$remote_host\nremote_run_as=$remote_run_as\nremote_modman_path=$remote_modman_path" > "$mm/.remote" 
+        echo "A .remote file was placed in your .modman folder.  Run 'modman update-remote' from module dir."
+    fi
+    #echo $mm
+  ;;
 
   remove)
     require_wc "$module" || exit 1

@@ -51,7 +51,7 @@ see a brief tutorial. For more in-depth information please see the
 
 ## Version Control Systems
 
-Modman currently supports subversion and git. Other VCSs could be used by
+Modman currently supports subversion, mercurial, and git. Other VCSs could be used by
 manually checking out the source code into the proper directory and using
 the "deploy" command.
 
